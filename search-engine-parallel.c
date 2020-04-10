@@ -143,7 +143,6 @@ int main(int argc, char **argv) {
         if(rem > 0){
             
             for(int x = p*size; x <= (p*size)+rem; x++)
-            //while (rem > 0)
             {
                 char path[] = "Aristo-Mini-Corpus/";
                 concatPath(path, isend[x]);
@@ -162,7 +161,6 @@ int main(int argc, char **argv) {
                     }
                 }
                 fclose(fp);
-                rem--;
             }
             counter += c;
             printf("Number of matched queries: %d\n", counter);
@@ -172,8 +170,6 @@ int main(int argc, char **argv) {
             printf("Parallel Elapsed time: %f seconds\n", finish-start); 
         }
     }
- 
-    MPI_Finalize();        
-
+    MPI_Finalize();
     return 0;
 }
