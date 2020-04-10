@@ -155,9 +155,7 @@ int main(int argc, char **argv) {
                     fgets(buff, 255, (FILE*)fp);
                     existsWhere isEx = stringsExists(buff, search_q, m);
                     if (isEx.index != -1)
-                    {
-                        fprintf(write_file, "%s", isEx.text);
-                        // printf("I am proc #%d I found:  %s", rank, isEx.text);
+                    {   fprintf(write_file, "%s", isEx.text);
                         c++;
                     }
                 }
