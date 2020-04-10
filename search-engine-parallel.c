@@ -70,12 +70,13 @@ int main(int argc, char **argv) {
     // clock_t begin = clock();
     double start = MPI_Wtime(); /*start timer*/
 
-    FILE *fp;
+    FILE *fp, *write_file;
     existsWhere structexistsWhere[50][30];
     int c = 0;
     char* search_q = "sunlight energy nutrients"; // Search Query
     int rank, size, i, off;
-    char* matched_queries[500];
+    char my_queries[100][250]; // Each query have 250 char
+    char matched_queries[500][250]; // Each query have 250 char
     const int N_FILES = 50;
     MPI_Datatype type;
     MPI_Init(&argc, &argv);
@@ -99,14 +100,15 @@ int main(int argc, char **argv) {
             isend[i-1] = i;
         }
     }
-    int x;
     MPI_Scatter(&isend, p, MPI_INT, &irecv, p, MPI_INT, 0, MPI_COMM_WORLD);
+    int x = 0;
     for (i = 0; i < p; i++)
     {
         char path[] = "Aristo-Mini-Corpus/";
         
         concatPath(path, irecv[i]);
         fp = fopen(path, "r");
+        write_file = fopen("matched_queries.txt","a");
         //printf("%s\n", path);
 
         for (int m = 0; m < 30; ++m) {
@@ -116,8 +118,10 @@ int main(int argc, char **argv) {
             if (isEx.index != -1)
             {
                 //structexistsWhere[x-1][m].index = isEx.index;
+                strcpy(my_queries[x], isEx.text);
+                fprintf(write_file, "%s", isEx.text);
+                printf("I am proc #%d I found:  %s", rank, my_queries[x]);
                 
-                printf("I am proc #%d I found:  %s", rank, isEx.text);
                 c++;
             }
             //else
@@ -125,17 +129,25 @@ int main(int argc, char **argv) {
         }
         fclose(fp);
     }
-
+    //printf("%s\n", my_queries[10]);
+    //printf("%ld\n", sizeof(my_queries)/sizeof(my_queries[0]));
+    /*for(int i = 0; i < sizeof(my_queries)/100; i++)
+    {
+        printf("I am proc #%d I found:  %s", rank, my_queries[x]);
+    }*/
+    /*MPI_Gather (&my_queries, x+1 , type, matched_queries, x+1, MPI_INT,0,MPI_COMM_WORLD);
+    for(int i = 0; i < 2; i++){
+        printf("%s\n", matched_queries[0]);
+    }*/
     // Handle the remainder
     if(rank == 0)
     {
-        //MPI_Gather (&localMax , 1 , MPI_INT, localMaxima,1,MPI_INT,0,MPI_COMM_WORLD);
         while (rem > 0)
         {
-            int x;
             char path[] = "Aristo-Mini-Corpus/";
             concatPath(path, N_FILES-rem+1);
             fp = fopen(path, "r");
+            write_file = fopen("matched_queries.txt","a");
             for (int m = 0; m < 30; ++m) {
                 char buff[255];
                 fgets(buff, 255, (FILE*)fp);
@@ -146,7 +158,7 @@ int main(int argc, char **argv) {
 
                     //MPI_File_open(MPI_COMM_WORLD, path, MPI_MODE_RDONLY, MPI_INFO_NULL, &fh);
                     //MPI_File_read_at(fh, 0, buff, 255, MPI_CHAR, &status);
-
+                    fprintf(write_file, "%s", isEx.text);
                     printf("I am proc #%d I found:  %s", rank, isEx.text);
                     c++;
                 }
