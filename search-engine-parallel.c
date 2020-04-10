@@ -148,7 +148,6 @@ int main(int argc, char **argv) {
                 char path[] = "Aristo-Mini-Corpus/";
                 concatPath(path, isend[x]);
                 fp = fopen(path, "r");
-                
                 write_file = fopen("matched_queries.txt","a");
                 for (int m = 0; m < 30; ++m) {
                     char buff[255];
@@ -160,7 +159,6 @@ int main(int argc, char **argv) {
                     }
                 }
                 fclose(fp);
-                rem--;
             }
             counter += c;
             printf("Number of matched queries: %d\n", counter);
