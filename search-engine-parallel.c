@@ -72,8 +72,8 @@ int main(int argc, char **argv) {
 
     FILE *fp, *write_file;
     existsWhere structexistsWhere[50][30];
-    int c = 0;
-    char* search_q = "sunlight energy nutrients"; // Search Query
+    int counter, c = 0;
+    char* search_q = "photosynthesis"; // Search Query
     int rank, size, i, off;
     char my_queries[100][250]; // Each query have 250 char
     char matched_queries[500][250]; // Each query have 250 char
@@ -83,7 +83,6 @@ int main(int argc, char **argv) {
     
     MPI_Comm_rank( MPI_COMM_WORLD, &rank );
     MPI_Comm_size( MPI_COMM_WORLD, &size );
-
     MPI_Type_contiguous(100, MPI_CHAR, &type);
     MPI_Type_commit(&type);
 
@@ -94,7 +93,10 @@ int main(int argc, char **argv) {
     int rem = N_FILES % size; // Remainder
     int isend[N_FILES], irecv[p];
     if(rank == 0){
+        write_file = fopen("matched_queries.txt","a");
         printf("\nSearch Query:\n %s\n\n", search_q);
+        fprintf(write_file, "Query: %s\n\n", search_q);
+        fclose(write_file);
         for (i = 1; i <= N_FILES; i++)
         {
             isend[i-1] = i;
@@ -102,6 +104,8 @@ int main(int argc, char **argv) {
     }
     MPI_Scatter(&isend, p, MPI_INT, &irecv, p, MPI_INT, 0, MPI_COMM_WORLD);
     int x = 0;
+    // matched_queries[rank][0] = (char) rank;
+    // printf("%s\n", matched_queries[rank]);
     for (i = 0; i < p; i++)
     {
         char path[] = "Aristo-Mini-Corpus/";
@@ -120,14 +124,16 @@ int main(int argc, char **argv) {
                 //structexistsWhere[x-1][m].index = isEx.index;
                 strcpy(my_queries[x], isEx.text);
                 fprintf(write_file, "%s", isEx.text);
-                printf("I am proc #%d I found:  %s", rank, my_queries[x]);
+                //printf("I am proc #%d I found:  %s", rank, my_queries[x]);
                 
                 c++;
             }
             //else
                 //structexistsWhere[x-1][m].index = -1;
+            MPI_Reduce(&c, &counter, 1,MPI_INT, MPI_SUM, 0, MPI_COMM_WORLD);
         }
         fclose(fp);
+        fclose(write_file);
     }
     //printf("%s\n", my_queries[10]);
     //printf("%ld\n", sizeof(my_queries)/sizeof(my_queries[0]));
@@ -167,8 +173,12 @@ int main(int argc, char **argv) {
             }
             fclose(fp);
             
+            MPI_Reduce(&c, &counter, 1,MPI_INT, MPI_SUM, 0, MPI_COMM_WORLD);
             rem--;
         }
+        printf("Number of matched queries: %d\n", counter);
+        fprintf(write_file, "\n\nMatched queries: %d", counter);
+        fclose(write_file);
         double finish=MPI_Wtime(); /*stop timer*/
         printf("Parallel Elapsed time: %f seconds\n", finish-start); 
     }
