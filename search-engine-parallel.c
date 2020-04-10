@@ -147,16 +147,13 @@ int main(int argc, char **argv) {
                 char path[] = "Aristo-Mini-Corpus/";
                 concatPath(path, isend[x]);
                 fp = fopen(path, "r");
-                
                 write_file = fopen("matched_queries.txt","a");
                 for (int m = 0; m < 30; ++m) {
                     char buff[255];
                     fgets(buff, 255, (FILE*)fp);
                     existsWhere isEx = stringsExists(buff, search_q, m);
                     if (isEx.index != -1)
-                    {
-                        fprintf(write_file, "%s", isEx.text);
-                        // printf("I am proc #%d I found:  %s", rank, isEx.text);
+                    {   fprintf(write_file, "%s", isEx.text);
                         c++;
                     }
                 }
@@ -170,6 +167,7 @@ int main(int argc, char **argv) {
             printf("Parallel Elapsed time: %f seconds\n", finish-start); 
         }
     }
-    MPI_Finalize();
+    MPI_Finalize();        
+
     return 0;
 }
