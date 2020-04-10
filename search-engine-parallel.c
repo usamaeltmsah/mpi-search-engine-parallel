@@ -1,4 +1,5 @@
 #include <stdio.h>
+#include<stdlib.h>
 #include <string.h>
 #include <ctype.h>
 #include "mpi.h"
@@ -13,8 +14,8 @@ existsWhere stringsExists(char* str1, char* str2, int ind)
 {
     char str1cpy[250] = "";
     strcpy(str1cpy, str1);
-    if (islower(str2[0]))
-        str1cpy[0] = tolower(str1cpy[0]);  // Convert the first letter to lower case
+    //if (islower(str2[0]))
+      //  str1cpy[0] = tolower(str1cpy[0]);  // Convert the first letter to lower case
 
     char stringToArr2[30][15]; //can store 30 words each of 15 characters
     int i, j, cnt1 = 0, cnt2 = 0;
@@ -73,18 +74,20 @@ int main(int argc, char **argv) {
     FILE *fp, *write_file;
     existsWhere structexistsWhere[50][30];
     int counter, c = 0;
-    char* search_q = "photosynthesis"; // Search Query
+    char* search_q = "plants animals"; // Search Query
+    //search_q = malloc(100*sizeof(char));
+    //scanf("%[^\n]%*c", search_q);
     int rank, size, i, off;
     char my_queries[100][250]; // Each query have 250 char
     char matched_queries[500][250]; // Each query have 250 char
     const int N_FILES = 50;
-    MPI_Datatype type;
+    //MPI_Datatype type;
     MPI_Init(&argc, &argv);
     
     MPI_Comm_rank( MPI_COMM_WORLD, &rank );
     MPI_Comm_size( MPI_COMM_WORLD, &size );
-    MPI_Type_contiguous(100, MPI_CHAR, &type);
-    MPI_Type_commit(&type);
+    //MPI_Type_contiguous(100, MPI_CHAR, &type);
+    //MPI_Type_commit(&type);
 
     MPI_Status status;
     int rc;
@@ -124,17 +127,16 @@ int main(int argc, char **argv) {
                 //structexistsWhere[x-1][m].index = isEx.index;
                 strcpy(my_queries[x], isEx.text);
                 fprintf(write_file, "%s", isEx.text);
-                //printf("I am proc #%d I found:  %s", rank, my_queries[x]);
-                
+                //printf("I am proc #%d I found:  %s", rank, my_queries[x]);                
                 c++;
             }
             //else
                 //structexistsWhere[x-1][m].index = -1;
-            MPI_Reduce(&c, &counter, 1,MPI_INT, MPI_SUM, 0, MPI_COMM_WORLD);
         }
         fclose(fp);
         fclose(write_file);
     }
+    MPI_Reduce(&c, &counter, 1,MPI_INT, MPI_SUM, 0, MPI_COMM_WORLD);
     //printf("%s\n", my_queries[10]);
     //printf("%ld\n", sizeof(my_queries)/sizeof(my_queries[0]));
     /*for(int i = 0; i < sizeof(my_queries)/100; i++)
@@ -145,44 +147,59 @@ int main(int argc, char **argv) {
     for(int i = 0; i < 2; i++){
         printf("%s\n", matched_queries[0]);
     }*/
+    c = 0;
     // Handle the remainder
     if(rank == 0)
     {
-        while (rem > 0)
-        {
-            char path[] = "Aristo-Mini-Corpus/";
-            concatPath(path, N_FILES-rem+1);
-            fp = fopen(path, "r");
-            write_file = fopen("matched_queries.txt","a");
-            for (int m = 0; m < 30; ++m) {
-                char buff[255];
-                fgets(buff, 255, (FILE*)fp);
-                existsWhere isEx = stringsExists(buff, search_q, m);
-                if (isEx.index != -1)
-                {
-                    //structexistsWhere[x-1][m].index = isEx.index;
-
-                    //MPI_File_open(MPI_COMM_WORLD, path, MPI_MODE_RDONLY, MPI_INFO_NULL, &fh);
-                    //MPI_File_read_at(fh, 0, buff, 255, MPI_CHAR, &status);
-                    fprintf(write_file, "%s", isEx.text);
-                    printf("I am proc #%d I found:  %s", rank, isEx.text);
-                    c++;
-                }
-                //else
-                    //structexistsWhere[x-1][m].index = -1;
-            }
-            fclose(fp);
-            
-            MPI_Reduce(&c, &counter, 1,MPI_INT, MPI_SUM, 0, MPI_COMM_WORLD);
-            rem--;
+        if (rem == 0){
+            printf("Number of matched queries: %d\n", counter);
+            fprintf(write_file, "\n\nMatched queries: %d", counter);
+            fclose(write_file);
+            double finish=MPI_Wtime(); /*stop timer*/
+            printf("Parallel Elapsed time: %f seconds\n", finish-start); 
+            MPI_Finalize();
+            return 0;
         }
-        printf("Number of matched queries: %d\n", counter);
-        fprintf(write_file, "\n\nMatched queries: %d", counter);
-        fclose(write_file);
-        double finish=MPI_Wtime(); /*stop timer*/
-        printf("Parallel Elapsed time: %f seconds\n", finish-start); 
-    }
+        if(rem > 0){
+            
+            for(int x = p*size; x <= (p*size)+rem; x++)
+            //while (rem > 0)
+            {
+                char path[] = "Aristo-Mini-Corpus/";
+                concatPath(path, isend[x]);
+                fp = fopen(path, "r");
+                
+                write_file = fopen("matched_queries.txt","a");
+                for (int m = 0; m < 30; ++m) {
+                    char buff[255];
+                    fgets(buff, 255, (FILE*)fp);
+                    existsWhere isEx = stringsExists(buff, search_q, m);
+                    if (isEx.index != -1)
+                    {
+                        //structexistsWhere[x-1][m].index = isEx.index;
 
+                        //MPI_File_open(MPI_COMM_WORLD, path, MPI_MODE_RDONLY, MPI_INFO_NULL, &fh);
+                        //MPI_File_read_at(fh, 0, buff, 255, MPI_CHAR, &status);
+                        fprintf(write_file, "%s", isEx.text);
+                        // printf("I am proc #%d I found:  %s", rank, isEx.text);
+                        c++;
+                    }
+                    //else
+                        //structexistsWhere[x-1][m].index = -1;
+                }
+                fclose(fp);
+                rem--;
+            }
+            //MPI_Reduce(&c, &counter, 1,MPI_INT, MPI_SUM, 0, MPI_COMM_WORLD);
+            counter += c;
+            printf("Number of matched queries: %d\n", counter);
+            fprintf(write_file, "\n\nMatched queries: %d", counter);
+            fclose(write_file);
+            double finish=MPI_Wtime(); /*stop timer*/
+            printf("Parallel Elapsed time: %f seconds\n", finish-start); 
+        }
+    }
+ 
     MPI_Finalize();        
 
     return 0;
